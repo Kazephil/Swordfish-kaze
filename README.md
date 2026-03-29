@@ -77,3 +77,7 @@ Technical Support | Peer support at [Groups.io](https://groups.io/g/maxprograms/
 ```
 
 Compile once and then simply run `npm start` to start Swordfish.
+
+## Legal
+
+License information for all included components is available in the [licenses](licenses/README.md) directory.

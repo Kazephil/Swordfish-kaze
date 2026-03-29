@@ -136,6 +136,7 @@ public class XliffStore {
 	private PreparedStatement getContext;
 	private PreparedStatement insertMetadata;
 	private PreparedStatement insertFileData;
+	private PreparedStatement insertContextStmt;
 
 	private Statement stmt;
 	private boolean preserve;
@@ -293,6 +294,29 @@ public class XliffStore {
 					);""";
 			try (Statement create = conn.createStatement()) {
 				create.execute(filesData);
+			}
+			conn.commit();
+		}
+		sql = "PRAGMA table_info(context);";
+		boolean contextExists = false;
+		try (Statement st = conn.createStatement()) {
+			try (ResultSet rs = st.executeQuery(sql)) {
+				if (rs.next()) {
+					contextExists = true;
+				}
+			}
+		}
+		if (!contextExists) {
+			logger.log(Level.INFO, "Context table does not exist, creating it.");
+			String context = """
+					CREATE TABLE context (
+					file VARCHAR(50),
+					unitId VARCHAR(256) NOT NULL,
+					contetxt TEXT NOT NULL,
+					   PRIMARY KEY(file, unitId)
+					);""";
+			try (Statement create = conn.createStatement()) {
+				create.execute(context);
 			}
 			conn.commit();
 		}
@@ -472,6 +496,13 @@ public class XliffStore {
 				    customdata TEXT NOT NULL,
 				    PRIMARY KEY(file, unitId)
 				    );""";
+		String context = """
+				CREATE TABLE context (
+				    file VARCHAR(50),
+				    unitId VARCHAR(256) NOT NULL,
+					contetxt TEXT NOT NULL,
+				    PRIMARY KEY(file, unitId)
+				    );""";
 		String filesMetadata = """
 				CREATE TABLE filesdata (
 				    file VARCHAR(50),
@@ -489,6 +520,7 @@ public class XliffStore {
 			create.execute(terms);
 			create.execute(notes);
 			create.execute(metadata);
+			create.execute(context);
 			create.execute(filesMetadata);
 			// Create indexes for query performance
 			create.execute("CREATE INDEX idx_segments_type_state ON segments(type, state)");
@@ -516,13 +548,14 @@ public class XliffStore {
 
 	private void parseDocument() throws SQLException, IOException, SAXException, ParserConfigurationException {
 		insertUnit = conn.prepareStatement("INSERT INTO units (file, unitId, data, compressed) VALUES (?,?,?,?)");
-		insertFileData = conn
-				.prepareStatement(
-						"INSERT INTO filesdata (file, original, sourceFile, metadata, customData) VALUES (?,?,?,?,?)");
+		insertFileData = conn.prepareStatement(
+				"INSERT INTO filesdata (file, original, sourceFile, metadata, customData) VALUES (?,?,?,?,?)");
 		insertFile = conn.prepareStatement("INSERT INTO files (id, name) VALUES (?,?)");
 		prepareInsertSegment();
 		insertNoteStmt = conn
 				.prepareStatement("INSERT INTO notes (file, unitId, segId, noteId, note) values (?,?,?,?,?)");
+		insertContextStmt = conn
+				.prepareStatement("INSERT INTO context (file, unitId, contetxt) values (?,?,?)");
 		recurse(document.getRootElement());
 		// Execute any remaining segment batch
 		if (segmentBatchCount > 0) {
@@ -533,6 +566,7 @@ public class XliffStore {
 		insertSegmentStmt.close();
 		insertFileData.close();
 		insertFile.close();
+		insertContextStmt.close();
 	}
 
 	private void harvestFilesData() throws SQLException, IOException, SAXException, ParserConfigurationException {
@@ -669,6 +703,21 @@ public class XliffStore {
 					Element d = list.get(i);
 					data.put(d.getAttributeValue("id"), d.getText());
 					tagCount++;
+				}
+			}
+
+			Element metadata = e.getChild("mda:metadata");
+			if (metadata != null) {
+				List<Element> groups = metadata.getChildren("mda:metaGroup");
+				for (Element group : groups) {
+					if ("context".equals(group.getAttributeValue("category"))) {
+						List<Element> items = group.getChildren("mda:meta");
+						JSONObject context = new JSONObject();
+						for (Element item : items) {
+							context.put(item.getAttributeValue("type"), item.getText());
+						}
+						insertContext(context.toString(2));
+					}
 				}
 			}
 
@@ -838,6 +887,13 @@ public class XliffStore {
 		}
 	}
 
+	private void insertContext(String string) throws SQLException {
+		insertContextStmt.setString(1, currentFile);
+		insertContextStmt.setString(2, currentUnit);
+		insertContextStmt.setString(3, string);
+		insertContextStmt.execute();
+	}
+
 	private JSONObject getJsonMetadata(Element metadata) {
 		JSONObject json = new JSONObject();
 		List<Element> groups = metadata.getChildren("mda:metaGroup");
@@ -961,7 +1017,8 @@ public class XliffStore {
 	public int size() throws SQLException {
 		int count = 0;
 		String sql = "SELECT count(*) FROM segments WHERE type='S'";
-		try (ResultSet rs = stmt.executeQuery(sql)) {
+		try (Statement localStmt = conn.createStatement();
+				ResultSet rs = localStmt.executeQuery(sql)) {
 			while (rs.next()) {
 				count = rs.getInt(1);
 			}
@@ -1052,7 +1109,12 @@ public class XliffStore {
 		queryBuilder.append(count);
 		queryBuilder.append(" OFFSET ");
 		queryBuilder.append(start);
-		try (ResultSet rs = stmt.executeQuery(queryBuilder.toString())) {
+		try (Statement queryStmt = conn.createStatement();
+				ResultSet rs = queryStmt.executeQuery(queryBuilder.toString());
+				PreparedStatement hasNotesStmt = conn
+						.prepareStatement("SELECT 1 FROM notes WHERE file=? AND unitId=? AND segId=? LIMIT 1");
+				PreparedStatement hasContextStmt = conn
+						.prepareStatement("SELECT 1 FROM context WHERE file=? AND unitId=? LIMIT 1")) {
 			while (rs.next()) {
 				String file = rs.getString(1);
 				String unit = rs.getString(2);
@@ -1109,7 +1171,8 @@ public class XliffStore {
 				row.put("source", addHtmlTags(source, filterText, caseSensitiveFilter, regExp, tagsData, segPreserve));
 				row.put("target", addHtmlTags(target, filterText, caseSensitiveFilter, regExp, tagsData, segPreserve));
 				row.put("match", getBestMatch(file, unit, segId));
-				row.put("hasNotes", hasNotes(file, unit, segId));
+				row.put("hasNotes", hasNotes(hasNotesStmt, file, unit, segId));
+				row.put("hasContext", hasContext(hasContextStmt, file, unit));
 				row.put("hasMetadata", hasMetadata);
 				row.put("tagErrors", tagErrors);
 				row.put("spaceErrors", spaceErrors);
@@ -1120,20 +1183,19 @@ public class XliffStore {
 	}
 
 	private boolean hasNotes(String file, String unit, String segId) throws SQLException {
-		boolean result = false;
-		try (PreparedStatement getNotesStmt = conn
-				.prepareStatement("SELECT noteId, note FROM notes WHERE file=? AND unitId=? AND segId=?")) {
-			getNotesStmt.setString(1, file);
-			getNotesStmt.setString(2, unit);
-			getNotesStmt.setString(3, segId);
-			try (ResultSet rs = getNotesStmt.executeQuery()) {
-				while (rs.next()) {
-					result = true;
-					break;
-				}
-			}
+		try (PreparedStatement stmt = conn
+				.prepareStatement("SELECT 1 FROM notes WHERE file=? AND unitId=? AND segId=? LIMIT 1")) {
+			return hasNotes(stmt, file, unit, segId);
 		}
-		return result;
+	}
+
+	private boolean hasNotes(PreparedStatement stmt, String file, String unit, String segId) throws SQLException {
+		stmt.setString(1, file);
+		stmt.setString(2, unit);
+		stmt.setString(3, segId);
+		try (ResultSet rs = stmt.executeQuery()) {
+			return rs.next();
+		}
 	}
 
 	private boolean hasMetadata(String file, String unit) throws SQLException {
@@ -1183,6 +1245,36 @@ public class XliffStore {
 			}
 		}
 		return array;
+	}
+
+	public synchronized JSONObject getContext(String file, String unit) throws SQLException {
+		JSONObject context = null;
+		try (PreparedStatement getContextStmt = conn
+				.prepareStatement("SELECT contetxt FROM context WHERE file=? AND unitId=?")) {
+			getContextStmt.setString(1, file);
+			getContextStmt.setString(2, unit);
+			try (ResultSet rs = getContextStmt.executeQuery()) {
+				if (rs.next()) {
+					context = new JSONObject(rs.getString(1));
+				}
+			}
+		}
+		return context;
+	}
+
+	private boolean hasContext(String file, String unit) throws SQLException {
+		try (PreparedStatement stmt = conn
+				.prepareStatement("SELECT 1 FROM context WHERE file=? AND unitId=? LIMIT 1")) {
+			return hasContext(stmt, file, unit);
+		}
+	}
+
+	private boolean hasContext(PreparedStatement stmt, String file, String unit) throws SQLException {
+		stmt.setString(1, file);
+		stmt.setString(2, unit);
+		try (ResultSet rs = stmt.executeQuery()) {
+			return rs.next();
+		}
 	}
 
 	public synchronized void saveMetadata(JSONObject json) throws SQLException {
@@ -1626,6 +1718,7 @@ public class XliffStore {
 		result.put("spaceErrors", spaceErrors);
 		result.put("hasMetadata", hasMetadata(file, unit));
 		result.put("hasNotes", hasNotes(file, unit, segment));
+		result.put("hasContext", hasContext(file, unit));
 
 		JSONObject originalData = getUnitData(file, unit);
 		tag = 1;
@@ -3428,7 +3521,7 @@ public class XliffStore {
 		return getTaggedtMatches(json);
 	}
 
-	public int tmTranslateAll(String memory, int penalization, Map<String, JSONObject> processes, String processId)
+	public int[] tmTranslateAll(String memory, int penalization, Map<String, JSONObject> processes, String processId)
 			throws IOException, SQLException, SAXException, ParserConfigurationException, URISyntaxException {
 		String memoryName = MemoriesHandler.getName(memory);
 		MemoriesHandler.open(memory);
@@ -3441,12 +3534,15 @@ public class XliffStore {
 			}
 		}
 		if (total == 0) {
-			return 0;
+			return new int[] { 0, 0 };
 		}
-		int processed = 0;
+		int translated = 0;
+		int matched = 0;
 		int offset = 0;
 		do {
-			processed += translateBatch(offset, engine, memoryName, penalization);
+			int[] batchResult = translateBatch(offset, engine, memoryName, penalization);
+			translated += batchResult[0];
+			matched += batchResult[1];
 			int percentage = Math.round(offset * 100f / total);
 			if (percentage == 100) {
 				percentage = 99;
@@ -3455,14 +3551,14 @@ public class XliffStore {
 			offset += BATCHSIZE;
 		} while (offset < total);
 		MemoriesHandler.close(memory);
-		return processed;
+		return new int[] { translated, matched };
 	}
 
-	private synchronized int translateBatch(int offset, ITmEngine engine, String memoryName, int penalization)
+	private synchronized int[] translateBatch(int offset, ITmEngine engine, String memoryName, int penalization)
 			throws IOException, SQLException, SAXException, ParserConfigurationException, URISyntaxException {
 		StringBuilder sb = new StringBuilder();
 		sb.append(
-				"SELECT file, unitId, segId, source, sourceText, target FROM segments WHERE type = 'S' AND state <> 'final' LIMIT ");
+				"SELECT file, unitId, segId, source, sourceText, target FROM segments WHERE type = 'S' AND state <> 'final' ORDER BY file, unitId, segId LIMIT ");
 		sb.append(BATCHSIZE);
 		sb.append(" OFFSET ");
 		sb.append(offset);
@@ -3495,9 +3591,10 @@ public class XliffStore {
 		return storeMatches(translations, memoryName, penalization);
 	}
 
-	private int storeMatches(JSONArray translations, String memoryName, int penalization)
+	private int[] storeMatches(JSONArray translations, String memoryName, int penalization)
 			throws SAXException, IOException, ParserConfigurationException, SQLException {
-		int count = 0;
+		int translated = 0;
+		int matched = 0;
 		for (int i = 0; i < translations.length(); i++) {
 			JSONObject json = translations.getJSONObject(i);
 			JSONArray matches = json.getJSONArray("matches");
@@ -3536,15 +3633,16 @@ public class XliffStore {
 								}
 								updateTarget(file, unit, segment, matchTarget, XliffUtils.pureText(matchTarget), false);
 								updated = true;
+								translated++;
 							}
 						}
 					}
 				}
 				conn.commit();
-				count++;
+				matched++;
 			}
 		}
-		return count;
+		return new int[] { translated, matched };
 	}
 
 	private Element fixTags(Element source, Element matchSource, Element matchTarget) {
@@ -5536,7 +5634,9 @@ public class XliffStore {
 		deleteUnitSegments(currentFile, currentUnit);
 
 		sql = "UPDATE segments SET child = child + 1 WHERE file = '" + currentFile + "' AND child >= " + index;
-		stmt.execute(sql);
+		try (Statement localStmt = conn.createStatement()) {
+			localStmt.execute(sql);
+		}
 
 		prepareInsertSegment();
 		List<Element> segments = unit.getChildren();
@@ -5559,6 +5659,9 @@ public class XliffStore {
 				state = "";
 				insertSegment(currentFile, currentUnit, id, "I", false, e.getChild("source"), e.getChild("target"));
 			}
+		}
+		if (segmentBatchCount > 0) {
+			insertSegmentStmt.executeBatch();
 		}
 		insertSegmentStmt.close();
 		conn.commit();
@@ -5746,7 +5849,9 @@ public class XliffStore {
 				insertSegment(currentFile, currentUnit, id, "I", false, e.getChild("source"), e.getChild("target"));
 			}
 		}
-
+		if (segmentBatchCount > 0) {
+			insertSegmentStmt.executeBatch();
+		}
 		insertSegmentStmt.close();
 		conn.commit();
 		indexSegments();

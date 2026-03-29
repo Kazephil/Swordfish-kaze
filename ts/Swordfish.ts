@@ -58,6 +58,7 @@ export class Swordfish {
     static changeCaseWindow: BrowserWindow;
     static applyTmWindow: BrowserWindow;
     static notesWindow: BrowserWindow;
+    static contextWindow: BrowserWindow;
     static addNoteWindow: BrowserWindow;
     static reviewCommentsWindow: BrowserWindow;
     static addReplyWindow: BrowserWindow;
@@ -922,6 +923,15 @@ export class Swordfish {
                 Swordfish.notesWindow.close();
             }
         });
+        ipcMain.on('show-context', (event: IpcMainEvent, segment: FullId) => {
+            Swordfish.showContext(segment);
+        });
+        ipcMain.on('close-context', () => {
+            if (Swordfish.contextWindow && !Swordfish.contextWindow.isDestroyed()) {
+                Swordfish.contextWindow.close();
+                Swordfish.mainWindow.webContents.send('context-closed');
+            }
+        });
         ipcMain.on('show-add-note', (event: IpcMainEvent, segmentId: FullId) => {
             Swordfish.showAddNote(segmentId);
         });
@@ -1213,6 +1223,7 @@ export class Swordfish {
             new MenuItem({ type: 'separator' }),
             { label: 'Show/Hide Notes', accelerator: 'F2', click: () => { Swordfish.toggleNotes(); }, icon: join(app.getAppPath(), 'images', iconFolder, 'notes.png') },
             { label: 'Show/Hide Review Comments', accelerator: 'Alt+F6', click: () => { Swordfish.toggleReviewComments(); }, icon: join(app.getAppPath(), 'images', iconFolder, 'SVG_EDIT_COMMENT.png') },
+            { label: 'Show/Hide Context', accelerator: 'Alt+F3', click: () => { Swordfish.toggleContext(); }, icon: join(app.getAppPath(), 'images', iconFolder, 'contextInfo.png') },
             new MenuItem({ type: 'separator' }),
             { label: 'Close Selected Tab', accelerator: 'CmdOrCtrl+W', click: () => { Swordfish.closeSelectedTab(); } },
             new MenuItem({ type: 'separator' }),
@@ -3734,6 +3745,7 @@ export class Swordfish {
                         tagErrors: data.tagErrors,
                         spaceErrors: data.spaceErrors,
                         hasNotes: data.hasNotes,
+                        hasContext: data.hasContext,
                         hasMetadata: data.hasMetadata
                     });
                 } else {
@@ -3745,6 +3757,7 @@ export class Swordfish {
                         tagErrors: data.tagErrors,
                         spaceErrors: data.spaceErrors,
                         hasNotes: data.hasNotes,
+                        hasContext: data.hasContext,
                         hasMetadata: data.hasMetadata
                     });
                 }
@@ -3807,7 +3820,7 @@ export class Swordfish {
                     return;
                 }
                 if (data.matches.length > 0) {
-                    Swordfish.mainWindow.webContents.send('set-matches', { project: arg.project, matches: data.matches });
+                    Swordfish.mainWindow.webContents.send('set-matches', { currentId: { project: arg.project, file: arg.file, unit: arg.unit, segment: arg.segment }, matches: data.matches });
                 }
                 Swordfish.mainWindow.webContents.send('end-waiting');
             },
@@ -3962,7 +3975,7 @@ export class Swordfish {
                             Swordfish.mainWindow.webContents.send('set-status', '');
                             clearInterval(intervalObject);
                             Swordfish.mainWindow.webContents.send('reload-page', arg.project);
-                            Swordfish.showMessage({ type: 'info', message: 'Added translations to ' + Swordfish.currentStatus.translated + ' segments' });
+                            Swordfish.showMessage({ type: 'info', message: 'Applied translations to ' + Swordfish.currentStatus.translated + ' segments.\n\nAdded matches to ' + Swordfish.currentStatus.matched + ' segments' });
                             return;
                         } else if (Swordfish.currentStatus.progress === Swordfish.PROCESSING) {
                             // it's OK, keep waiting
@@ -6159,6 +6172,71 @@ export class Swordfish {
             return;
         }
         Swordfish.mainWindow.webContents.send('notes-requested');
+    }
+
+    static showContext(segment: FullId): void {
+        if (Swordfish.contextWindow && !Swordfish.contextWindow.isDestroyed() && Swordfish.contextWindow.isVisible()) {
+            Swordfish.getContext(segment);
+            return;
+        }
+        Swordfish.contextWindow = new BrowserWindow({
+            parent: Swordfish.mainWindow,
+            width: 350,
+            height: 250,
+            minimizable: false,
+            maximizable: false,
+            resizable: true,
+            show: false,
+            alwaysOnTop: true,
+            icon: this.iconPath,
+            webPreferences: {
+                nodeIntegration: true,
+                contextIsolation: false
+            }
+        });
+        Swordfish.contextWindow.setMenu(null);
+        let filePath: string = join(app.getAppPath(), 'html', Swordfish.currentPreferences.appLang, 'context.html');
+        let fileUrl: URL = new URL('file://' + filePath);
+        Swordfish.contextWindow.loadURL(fileUrl.href);
+        Swordfish.contextWindow.addListener('closed', () => {
+            try {
+                Swordfish.mainWindow?.focus();
+                Swordfish.mainWindow?.webContents.send('context-closed');
+            } catch (e) {
+                // ignore
+            }
+        });
+        Swordfish.contextWindow.once('ready-to-show', () => {
+            Swordfish.contextWindow.show();
+            Swordfish.getContext(segment);
+            Swordfish.mainWindow.webContents.send('context-requested');
+        });
+        Swordfish.setLocation(this.contextWindow, 'context.html');
+        Swordfish.monitorSize(this.contextWindow, 'context.html');
+    }
+
+    static getContext(segment: FullId) {
+        Swordfish.sendRequest('/projects/getContext', segment,
+            (data: any) => {
+                if (data.status === 'Success') {
+                    Swordfish.contextWindow.webContents.send('set-context', data.context);
+                } else {
+                    Swordfish.showMessage({ type: 'error', message: data.reason });
+                }
+            },
+            (reason: string) => {
+                Swordfish.showMessage({ type: 'error', message: reason });
+            }
+        );
+    }
+
+    static toggleContext(): void {
+        if (Swordfish.contextWindow && !Swordfish.contextWindow.isDestroyed() && Swordfish.contextWindow.isVisible()) {
+            Swordfish.contextWindow.close();
+            Swordfish.mainWindow.webContents.send('context-closed');
+            return;
+        }
+        Swordfish.mainWindow.webContents.send('context-requested');
     }
 
     static showNotes(segment: FullId): void {

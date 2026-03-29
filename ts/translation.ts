@@ -56,6 +56,8 @@ export class TranslationView {
     static FILE_INFO: string = "<svg xmlns='http://www.w3.org/2000/svg' height='20px' viewBox='0 -960 960 960' width='20px'><path d='M444-288h72v-240h-72v240Zm35.79-312q15.21 0 25.71-10.29t10.5-25.5q0-15.21-10.29-25.71t-25.5-10.5q-15.21 0-25.71 10.29t-10.5 25.5q0 15.21 10.29 25.71t25.5 10.5Zm.49 504Q401-96 331-126t-122.5-82.5Q156-261 126-330.96t-30-149.5Q96-560 126-629.5q30-69.5 82.5-122T330.96-834q69.96-30 149.5-30t149.04 30q69.5 30 122 82.5T834-629.28q30 69.73 30 149Q864-401 834-331t-82.5 122.5Q699-156 629.28-126q-69.73 30-149 30Zm-.28-72q130 0 221-91t91-221q0-130-91-221t-221-91q-130 0-221 91t-91 221q0 130 91 221t221 91Zm0-312Z'/></svg>";
     static HAS_COMMENT: string = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"><path d="M288-288h288v-72H288v72Zm0-156h384v-72H288v72Zm0-156h384v-72H288v72Zm-72 456q-29.7 0-50.85-21.15Q144-186.3 144-216v-528q0-29.7 21.15-50.85Q186.3-816 216-816h528q29.7 0 50.85 21.15Q816-773.7 816-744v528q0 29.7-21.15 50.85Q773.7-144 744-144H216Zm0-72h528v-528H216v528Zm0-528v528-528Z"/></svg>';
     static NO_COMMENT: string = '<svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"><path d="M204-120q-34.65 0-59.32-24.68Q120-169.35 120-204v-552q0-34.65 24.68-59.33Q169.35-840 204-840h552q34.65 0 59.33 24.67Q840-790.65 840-756v552q0 34.65-24.67 59.32Q790.65-120 756-120H204Zm0-84h552v-552H204v552Zm0 0v-552 552Z"/></svg>';
+    static SVG_HAS_CONTEXT: string = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_4_17)"><path d="M11.05 13.75H11.95V11.05H11.05V13.75ZM11.8206 10.0206C11.9069 9.93438 11.95 9.8275 11.95 9.7C11.95 9.5725 11.9069 9.46563 11.8206 9.37938C11.7344 9.29313 11.6275 9.25 11.5 9.25C11.3725 9.25 11.2656 9.29313 11.1794 9.37938C11.0931 9.46563 11.05 9.5725 11.05 9.7C11.05 9.8275 11.0931 9.93438 11.1794 10.0206C11.2656 10.1069 11.3725 10.15 11.5 10.15C11.6275 10.15 11.7344 10.1069 11.8206 10.0206ZM11.5 16C10.8775 16 10.2925 15.8819 9.745 15.6456C9.1975 15.4094 8.72125 15.0888 8.31625 14.6838C7.91125 14.2788 7.59063 13.8025 7.35438 13.255C7.11813 12.7075 7 12.1225 7 11.5C7 10.8775 7.11813 10.2925 7.35438 9.745C7.59063 9.1975 7.91125 8.72125 8.31625 8.31625C8.72125 7.91125 9.1975 7.59063 9.745 7.35438C10.2925 7.11813 10.8775 7 11.5 7C12.1225 7 12.7075 7.11813 13.255 7.35438C13.8025 7.59063 14.2788 7.91125 14.6838 8.31625C15.0888 8.72125 15.4094 9.1975 15.6456 9.745C15.8819 10.2925 16 10.8775 16 11.5C16 12.1225 15.8819 12.7075 15.6456 13.255C15.4094 13.8025 15.0888 14.2788 14.6838 14.6838C14.2788 15.0888 13.8025 15.4094 13.255 15.6456C12.7075 15.8819 12.1225 16 11.5 16ZM11.5 15.1C12.505 15.1 13.3563 14.7513 14.0538 14.0538C14.7513 13.3563 15.1 12.505 15.1 11.5C15.1 10.495 14.7513 9.64375 14.0538 8.94625C13.3563 8.24875 12.505 7.9 11.5 7.9C10.495 7.9 9.64375 8.24875 8.94625 8.94625C8.24875 9.64375 7.9 10.495 7.9 11.5C7.9 12.505 8.24875 13.3563 8.94625 14.0538C9.64375 14.7513 10.495 15.1 11.5 15.1Z"/><line y1="1" x2="16" y2="1" stroke-width="2"/><line y1="5" x2="16" y2="5" stroke-width="2"/><line y1="9" x2="6" y2="9" stroke-width="2"/><line y1="13" x2="6" y2="13" stroke-width="2"/></g><defs><clipPath id="clip0_4_17"><rect width="16" height="16"/></clipPath></defs></svg>';
+    static CONTEXT_SPAN: string = "<span class='iconTooltip'>" + this.SVG_HAS_CONTEXT + " <small class='tooltiptext'>Segment has context</small></span>";
 
     static LOCK_SPAN: string = "<span class='iconTooltip'>" + this.SVG_LOCK + " <small class='tooltiptext'>Locked segment</small></span>";
     static FINAL_SPAN: string = "<span class='iconTooltip'>" + this.SVG_FINAL + " <small class='tooltiptext'>Confirmed</small></span>";
@@ -155,6 +157,7 @@ export class TranslationView {
 
     notesVisible: boolean = false;
     commentsVisible: boolean = false;
+    contextVisible: boolean = false;
 
     constructor(tab: Tab, projectId: string, sourceLang: string, targetLang: string, rows: number) {
         this.container = tab.getContainer();
@@ -381,6 +384,7 @@ export class TranslationView {
         ipcRenderer.on('count-changed', (event: IpcRendererEvent, arg: any) => {
             if (arg.project === this.projectId) {
                 ipcRenderer.send('get-segments-count', { project: this.projectId });
+                this.getSegments();
             }
         });
         this.watchSizes();
@@ -770,6 +774,15 @@ export class TranslationView {
         });
         this.topBar.appendChild(notesButton);
 
+        let contextButton: HTMLAnchorElement = document.createElement('a');
+        contextButton.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15.4 19H16.6V15.4H15.4V19ZM16.4275 14.0275C16.5425 13.9125 16.6 13.77 16.6 13.6C16.6 13.43 16.5425 13.2875 16.4275 13.1725C16.3125 13.0575 16.17 13 16 13C15.83 13 15.6875 13.0575 15.5725 13.1725C15.4575 13.2875 15.4 13.43 15.4 13.6C15.4 13.77 15.4575 13.9125 15.5725 14.0275C15.6875 14.1425 15.83 14.2 16 14.2C16.17 14.2 16.3125 14.1425 16.4275 14.0275ZM16 22C15.17 22 14.39 21.8425 13.66 21.5275C12.93 21.2125 12.295 20.785 11.755 20.245C11.215 19.705 10.7875 19.07 10.4725 18.34C10.1575 17.61 10 16.83 10 16C10 15.17 10.1575 14.39 10.4725 13.66C10.7875 12.93 11.215 12.295 11.755 11.755C12.295 11.215 12.93 10.7875 13.66 10.4725C14.39 10.1575 15.17 10 16 10C16.83 10 17.61 10.1575 18.34 10.4725C19.07 10.7875 19.705 11.215 20.245 11.755C20.785 12.295 21.2125 12.93 21.5275 13.66C21.8425 14.39 22 15.17 22 16C22 16.83 21.8425 17.61 21.5275 18.34C21.2125 19.07 20.785 19.705 20.245 20.245C19.705 20.785 19.07 21.2125 18.34 21.5275C17.61 21.8425 16.83 22 16 22ZM16 20.8C17.34 20.8 18.475 20.335 19.405 19.405C20.335 18.475 20.8 17.34 20.8 16C20.8 14.66 20.335 13.525 19.405 12.595C18.475 11.665 17.34 11.2 16 11.2C14.66 11.2 13.525 11.665 12.595 12.595C11.665 13.525 11.2 14.66 11.2 16C11.2 17.34 11.665 18.475 12.595 19.405C13.525 20.335 14.66 20.8 16 20.8Z"/><line x1="2" y1="4" x2="22" y2="4" stroke-width="2"/><line x1="2" y1="8" x2="22" y2="8" stroke-width="2"/><line x1="2" y1="12" x2="9" y2="12" stroke-width="2"/><line x1="2" y1="16" x2="9" y2="16" stroke-width="2"/><line x1="2" y1="20" x2="9" y2="20" stroke-width="2"/></svg>' +
+            '<span class="tooltiptext bottomTooltip">Show/Hide Context</span>';
+        contextButton.className = 'tooltip bottomTooltip';
+        contextButton.addEventListener('click', () => {
+            this.showContext();
+        });
+        this.topBar.appendChild(contextButton);
+
         let metadataButton: HTMLAnchorElement = document.createElement('a');
         metadataButton.innerHTML = TranslationView.EDIT_COMMENT_SPAN;
         metadataButton.className = 'tooltip bottomTooltip';
@@ -779,9 +792,7 @@ export class TranslationView {
         this.topBar.appendChild(metadataButton);
 
         let addTermButton: HTMLAnchorElement = document.createElement('a');
-        addTermButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24">' +
-            '<path d="M14 10H2v2h12v-2zm0-4H2v2h12V6zm4 8v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM2 16h8v-2H2v2z"/>' +
-            '</svg>' +
+        addTermButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><line x1="2" y1="3" x2="13" y2="3" stroke-width="2"/><line x1="2" y1="7" x2="13" y2="7" stroke-width="2"/><line x1="2" y1="11" x2="13" y2="11" stroke-width="2"/><line x1="10" y1="16" x2="22" y2="16" stroke-width="2"/><line x1="16" y1="10" x2="16" y2="22" stroke-width="2"/></svg>' +
             '<span class="tooltiptext bottomTooltip">Add Term to Glossary</span>';
         addTermButton.className = 'tooltip bottomTooltip';
         addTermButton.style.marginLeft = '10px';
@@ -1875,7 +1886,6 @@ export class TranslationView {
             td.classList.add('middle');
             td.classList.add('center');
             td.classList.add('translate');
-            td.innerHTML = TranslationView.SVG_BLANK;
             if (!row.translate) {
                 td.innerHTML = TranslationView.LOCK_SPAN;
                 tr.classList.add('locked');
@@ -1904,6 +1914,23 @@ export class TranslationView {
                     ipcRenderer.send('show-metadata', metaId);
                 });
                 td.appendChild(span);
+            }
+            if (row.hasContext) {
+                let span: HTMLSpanElement = document.createElement('span');
+                span.innerHTML = TranslationView.SVG_HAS_CONTEXT;
+                span.classList.add('iconTooltip');
+                let tooltip: HTMLElement = document.createElement('small');
+                tooltip.classList.add('tooltiptext');
+                tooltip.textContent = 'Segment has context';
+                span.appendChild(tooltip);
+                span.addEventListener('click', (event: MouseEvent) => {
+                    this.showContext();
+                });
+                td.appendChild(span);
+            }
+            // Only show blank SVG if no other icons are present
+            if (td.innerHTML === '') {
+                td.innerHTML = TranslationView.SVG_BLANK;
             }
             tr.appendChild(td);
 
@@ -2375,6 +2402,9 @@ export class TranslationView {
         if (this.commentsVisible) {
             this.showReviewComments();
         }
+        if (this.contextVisible) {
+            this.showContext();
+        }
         this.centerRow(this.currentRow);
         this.currentCell.focus();
     }
@@ -2574,7 +2604,11 @@ export class TranslationView {
         }
     }
 
-    setMatches(matches: Match[]): void {
+    setMatches(arg: { currentId: FullId; matches: Match[] }): void {
+        if (arg.currentId.file !== this.currentId.file || arg.currentId.unit !== this.currentId.unit || arg.currentId.segment !== this.currentId.id) {
+            return;
+        }
+        let matches: Match[] = arg.matches;
         this.tmMatches?.clear();
         this.mtMatches?.clear();
         let length: number = matches.length;
@@ -3150,7 +3184,31 @@ export class TranslationView {
             });
             let currentTranslate: HTMLTableCellElement = this.currentRow.getElementsByClassName('translate')[0] as HTMLTableCellElement;
             let isLocked: boolean = currentTranslate.innerHTML.includes(TranslationView.LOCK_FRAGMENT);
-            currentTranslate.innerHTML = isLocked ? TranslationView.SVG_BLANK : TranslationView.LOCK_SPAN;
+
+            if (isLocked) {
+                // Unlocking: find and remove the lock span
+                let spans = currentTranslate.getElementsByTagName('span');
+                for (let i = spans.length - 1; i >= 0; i--) {
+                    if (spans[i].innerHTML.includes(TranslationView.LOCK_FRAGMENT)) {
+                        spans[i].remove();
+                        break;
+                    }
+                }
+                // Check if we need to add blank SVG
+                if (currentTranslate.innerHTML === '') {
+                    currentTranslate.innerHTML = TranslationView.SVG_BLANK;
+                }
+            } else {
+                // Locking: remove blank SVG if present and add lock span at the beginning
+                if (currentTranslate.innerHTML.includes(TranslationView.SVG_BLANK)) {
+                    currentTranslate.innerHTML = '';
+                }
+                let lockSpan: HTMLSpanElement = document.createElement('span');
+                lockSpan.classList.add('iconTooltip');
+                lockSpan.innerHTML = TranslationView.SVG_LOCK + " <small class='tooltiptext'>Locked segment</small>";
+                currentTranslate.insertBefore(lockSpan, currentTranslate.firstChild);
+            }
+
             this.currentRow.classList.toggle('locked');
             this.selectRow(this.currentRow);
             return;
@@ -3358,7 +3416,7 @@ export class TranslationView {
             this.currentCell?.focus();
         }
 
-        if (event.key === 'Enter' || event.key === 'NumpadEnter') {
+        if ((event.key === 'Enter' || event.key === 'NumpadEnter') && event.altKey) {
             event.preventDefault();
             let selection: Selection | null = window.getSelection();
             if (selection && selection.rangeCount !== 0) {
@@ -3437,6 +3495,7 @@ export class TranslationView {
             if (row.getAttribute('data-file') === arg.file && row.getAttribute('data-unit') === arg.unit
                 && row.getAttribute('data-id') === arg.segment) {
                 let td: HTMLTableCellElement = row.getElementsByClassName('translate')[0] as HTMLTableCellElement;
+                td.innerHTML = '';
                 if (arg.tagErrors) {
                     td.innerHTML = TranslationView.TAG_WARNING;
                 }
@@ -3461,6 +3520,23 @@ export class TranslationView {
                     });
                     td.appendChild(span);
                 }
+                if (arg.hasContext !== undefined && arg.hasContext) {
+                    let span: HTMLSpanElement = document.createElement('span');
+                    span.innerHTML = TranslationView.SVG_HAS_CONTEXT;
+                    span.classList.add('iconTooltip');
+                    let tooltip: HTMLElement = document.createElement('small');
+                    tooltip.classList.add('tooltiptext');
+                    tooltip.textContent = 'Segment has context';
+                    span.appendChild(tooltip);
+                    span.addEventListener('click', (event: MouseEvent) => {
+                        this.showContext();
+                    });
+                    td.appendChild(span);
+                }
+                // Only show blank SVG if no other icons are present
+                if (td.innerHTML === '') {
+                    td.innerHTML = TranslationView.SVG_BLANK;
+                }
                 break;
             }
         }
@@ -3474,8 +3550,10 @@ export class TranslationView {
             if (row.getAttribute('data-file') === arg.file && row.getAttribute('data-unit') === arg.unit
                 && row.getAttribute('data-id') === arg.segment) {
                 let td: HTMLTableCellElement = row.getElementsByClassName('translate')[0] as HTMLTableCellElement;
-                if (!td.innerHTML.includes(TranslationView.LOCK_FRAGMENT)) {
-                    td.innerHTML = TranslationView.SVG_BLANK;
+                let hasLock = td.innerHTML.includes(TranslationView.LOCK_FRAGMENT);
+                td.innerHTML = '';
+                if (hasLock) {
+                    td.innerHTML = TranslationView.LOCK_SPAN;
                 }
                 if (arg.hasMetadata) {
                     let span: HTMLSpanElement = document.createElement('span');
@@ -3492,6 +3570,23 @@ export class TranslationView {
                         ipcRenderer.send('show-metadata', metaId);
                     });
                     td.appendChild(span);
+                }
+                if (arg.hasContext !== undefined && arg.hasContext) {
+                    let span: HTMLSpanElement = document.createElement('span');
+                    span.innerHTML = TranslationView.SVG_HAS_CONTEXT;
+                    span.classList.add('iconTooltip');
+                    let tooltip: HTMLElement = document.createElement('small');
+                    tooltip.classList.add('tooltiptext');
+                    tooltip.textContent = 'Segment has context';
+                    span.appendChild(tooltip);
+                    span.addEventListener('click', (event: MouseEvent) => {
+                        this.showContext();
+                    });
+                    td.appendChild(span);
+                }
+                // Only show blank SVG if no other icons are present
+                if (td.innerHTML === '') {
+                    td.innerHTML = TranslationView.SVG_BLANK;
                 }
                 break;
             }
@@ -3517,12 +3612,25 @@ export class TranslationView {
         ipcRenderer.send('show-metadata', data);
     }
 
+    showContext(): void {
+        ipcRenderer.send('show-context', {
+            project: this.projectId,
+            file: this.currentId.file,
+            unit: this.currentId.unit,
+            segment: this.currentId.id
+        });
+    }
+
     showingNotes(arg: boolean): void {
         this.notesVisible = arg;
     }
 
     showingReviewComments(arg: boolean): void {
         this.commentsVisible = arg;
+    }
+
+    showingContext(arg: boolean): void {
+        this.contextVisible = arg;
     }
 
     notesRemoved(): void {

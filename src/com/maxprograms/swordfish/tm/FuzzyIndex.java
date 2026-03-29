@@ -36,7 +36,7 @@ public class FuzzyIndex {
 		maps = new Hashtable<>();
 	}
 
-	NavigableSet<Fun.Tuple2<Integer, String>> getIndex(String lang) throws IOException {
+	synchronized NavigableSet<Fun.Tuple2<Integer, String>> getIndex(String lang) throws IOException {
 		if (!maps.containsKey(lang)) {
 			DB mapdb = null;
 			try {

@@ -16,6 +16,7 @@ import { MemoriesView } from "./memories.js";
 import { MetaId } from "./metadata.js";
 import { Project } from "./project.js";
 import { ProjectsView } from "./projects.js";
+import { Match } from "./match.js";
 import { FullId } from "./segmentId.js";
 import { Tab, TabHolder } from "./tabs.js";
 import { TranslationView } from "./translation.js";
@@ -420,6 +421,12 @@ export class Main {
         ipcRenderer.on('notes-requested', () => {
             this.notesRequested();
         });
+        ipcRenderer.on('context-requested', () => {
+            this.contextRequested();
+        });
+        ipcRenderer.on('context-closed', () => {
+            this.contextClosed();
+        });
         ipcRenderer.on('metadata-requested', (event: IpcRendererEvent, metaId: MetaId) => {
             this.metadataRequested(metaId);
         });
@@ -810,9 +817,9 @@ export class Main {
         }
     }
 
-    setMatches(arg: any): void {
-        if (Main.translationViews.has(arg.project)) {
-            (Main.translationViews.get(arg.project) as TranslationView).setMatches(arg.matches);
+    setMatches(arg: { currentId: FullId; matches: Match[] }): void {
+        if (Main.translationViews.has(arg.currentId.project)) {
+            (Main.translationViews.get(arg.currentId.project) as TranslationView).setMatches(arg);
         }
     }
 
@@ -1274,6 +1281,22 @@ export class Main {
         }
         if (Main.translationViews.has(selected)) {
             (Main.translationViews.get(selected) as TranslationView).showNotes();
+        }
+    }
+
+    contextRequested(): void {
+        let selected: string = Main.tabHolder.getSelected();
+        for (let key of Main.translationViews.keys()) {
+            (Main.translationViews.get(key) as TranslationView).showingContext(true);
+        }
+        if (Main.translationViews.has(selected)) {
+            (Main.translationViews.get(selected) as TranslationView).showContext();
+        }
+    }
+
+    contextClosed(): void {
+        for (let key of Main.translationViews.keys()) {
+            (Main.translationViews.get(key) as TranslationView).showingContext(false);
         }
     }
 

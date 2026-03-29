@@ -103,7 +103,7 @@ export class TmMatches {
         this.matches.set(match.matchId, match);
         let tab = new Tab(match.matchId, match.similarity + '%', false, this.tabHolder);
 
-        let height: number = this.container.clientHeight - 65; // tabHolder.labels + toolbar
+        let height: number = this.container.clientHeight - 69; // tabHolder.labels + toolbar
         tab.getContainer().style.height = height + 'px';
 
         let matchDiv = document.createElement('div');

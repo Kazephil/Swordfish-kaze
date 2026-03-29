@@ -92,10 +92,13 @@ export class MtMatches {
         this.matches.set(match.matchId, match);
         let tab = new Tab(match.matchId, match.origin, false, this.tabHolder);
 
+        let height: number = this.container.clientHeight - 69; // tabHolder.labels + toolbar
+
         let div: HTMLDivElement = tab.getContainer();
         div.classList.add('divContainer');
         div.classList.add('machineContainer');
         div.classList.add('zoom');
+        div.style.height = height + 'px';
         div.style.width = ('calc(100% - 8px');
         div.innerHTML = match.target;
         if (TranslationView.isBiDi(match.tgtLang)) {

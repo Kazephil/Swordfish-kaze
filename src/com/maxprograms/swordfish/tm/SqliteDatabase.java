@@ -36,7 +36,12 @@ import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.Vector;
+import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Pattern;
 
@@ -80,6 +85,9 @@ public class SqliteDatabase implements ITmEngine {
     // Connection pool for concurrent read operations
     private BlockingQueue<Connection> readConnectionPool;
     private static final int DEFAULT_POOL_SIZE = Runtime.getRuntime().availableProcessors();
+
+    // Thread pool for parallel segment searches in batchTranslate
+    private ExecutorService translatePool;
 
     private TMXReader reader;
 
@@ -158,6 +166,9 @@ public class SqliteDatabase implements ITmEngine {
 
         // Initialize connection pool for concurrent read operations
         initializeConnectionPool(DEFAULT_POOL_SIZE);
+
+        // Thread pool sized to match connection pool for parallel TM searches
+        translatePool = Executors.newFixedThreadPool(DEFAULT_POOL_SIZE);
     }
 
     private void createTables() throws SQLException {
@@ -276,27 +287,50 @@ public class SqliteDatabase implements ITmEngine {
     @Override
     public JSONArray batchTranslate(JSONObject params)
             throws IOException, SAXException, ParserConfigurationException, SQLException, URISyntaxException {
-        JSONArray result = new JSONArray();
         String srcLang = params.getString("srcLang");
         String tgtLang = params.getString("tgtLang");
         JSONArray segments = params.getJSONArray("segments");
         boolean caseSensitiveMatches = params.getBoolean("caseSensitiveMatches");
-        for (int i = 0; i < segments.length(); i++) {
-            JSONObject json = segments.getJSONObject(i);
-            List<Match> matches = searchTranslation(json.getString("pure"), srcLang, tgtLang, matchThreshold,
-                    caseSensitiveMatches);
-            JSONArray array = new JSONArray();
-            for (int j = 0; j < matches.size(); j++) {
-                array.put(matches.get(j).toJSON());
+        int size = segments.length();
+        List<Future<JSONObject>> futures = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            final JSONObject json = segments.getJSONObject(i);
+            futures.add(translatePool.submit(() -> {
+                List<Match> matches = searchTranslation(json.getString("pure"), srcLang, tgtLang, matchThreshold,
+                        caseSensitiveMatches);
+                JSONArray array = new JSONArray();
+                for (Match m : matches) {
+                    array.put(m.toJSON());
+                }
+                json.put("matches", array);
+                return json;
+            }));
+        }
+        JSONArray result = new JSONArray();
+        for (Future<JSONObject> future : futures) {
+            try {
+                result.put(future.get());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Interrupted during batch translate", e);
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof IOException io) throw io;
+                if (cause instanceof SAXException sax) throw sax;
+                if (cause instanceof ParserConfigurationException pce) throw pce;
+                if (cause instanceof SQLException sql) throw sql;
+                if (cause instanceof URISyntaxException uri) throw uri;
+                throw new IOException("Unexpected error during batch translate", cause);
             }
-            json.put("matches", array);
-            result.put(json);
         }
         return result;
     }
 
     @Override
     public void close() throws IOException, SQLException, URISyntaxException {
+        if (translatePool != null) {
+            translatePool.shutdown();
+        }
         storeTUV.close();
         deleteTUV.close();
         searchTUV.close();

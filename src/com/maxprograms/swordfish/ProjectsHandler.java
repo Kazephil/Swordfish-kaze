@@ -57,6 +57,7 @@ import com.maxprograms.swordfish.xliff.Skeletons;
 import com.maxprograms.swordfish.xliff.XliffStore;
 import com.maxprograms.swordfish.xliff.XliffUtils;
 import com.maxprograms.xliff2.ToXliff2;
+import com.maxprograms.xml.CatalogBuilder;
 import com.maxprograms.xml.Document;
 import com.maxprograms.xml.Element;
 import com.maxprograms.xml.Indenter;
@@ -64,6 +65,7 @@ import com.maxprograms.xml.SAXBuilder;
 import com.maxprograms.xml.XMLOutputter;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import com.maxprograms.xliff2.Resegmenter;
 
 public class ProjectsHandler implements HttpHandler {
 
@@ -224,6 +226,8 @@ public class ProjectsHandler implements HttpHandler {
 				response = mergeSegment(request);
 			} else if ("/projects/getNotes".equals(url)) {
 				response = getNotes(request);
+			} else if ("/projects/getContext".equals(url)) {
+				response = getContext(request);
 			} else if ("/projects/getMetadata".equals(url)) {
 				response = getMetadata(request);
 			} else if ("/projects/getCustomMetadata".equals(url)) {
@@ -373,7 +377,7 @@ public class ProjectsHandler implements HttpHandler {
 		obj.put(Constants.PROGRESS, Constants.PROCESSING);
 		processes.put(id, obj);
 		try {
-			Thread.ofVirtual().start(() -> {
+			new Thread(() -> {
 				try {
 					projectStores.get(project).exportTranslations(output);
 					obj.put(Constants.PROGRESS, Constants.COMPLETED);
@@ -384,7 +388,7 @@ public class ProjectsHandler implements HttpHandler {
 					obj.put(Constants.REASON, e.getMessage());
 					processes.put(id, obj);
 				}
-			});
+			}).start();
 		} catch (Exception e) {
 			logger.log(Level.ERROR, Messages.getString("ProjectsHandler.4"), e);
 			result.put(Constants.REASON, e.getMessage());
@@ -416,7 +420,7 @@ public class ProjectsHandler implements HttpHandler {
 		obj.put(Constants.PROGRESS, Constants.PROCESSING);
 		processes.put(id, obj);
 		try {
-			Thread.ofVirtual().start(() -> {
+			new Thread(() -> {
 				try {
 					projectStores.get(project).exportXliff(output);
 					obj.put(Constants.PROGRESS, Constants.COMPLETED);
@@ -427,7 +431,7 @@ public class ProjectsHandler implements HttpHandler {
 					obj.put(Constants.REASON, e.getMessage());
 					processes.put(id, obj);
 				}
-			});
+			}).start();
 		} catch (Exception e) {
 			logger.log(Level.ERROR, Messages.getString("ProjectsHandler.4"), e);
 			result.put(Constants.REASON, e.getMessage());
@@ -468,7 +472,7 @@ public class ProjectsHandler implements HttpHandler {
 				obj.put(Constants.PROGRESS, Constants.PROCESSING);
 				processes.put(id, obj);
 				try {
-					Thread.ofVirtual().start(() -> {
+					new Thread(() -> {
 						try {
 							projectStores.get(project).importXliff(xliff);
 							obj.put(Constants.PROGRESS, Constants.COMPLETED);
@@ -479,7 +483,7 @@ public class ProjectsHandler implements HttpHandler {
 							obj.put(Constants.REASON, e.getMessage());
 							processes.put(id, obj);
 						}
-					});
+					}).start();
 				} catch (Exception e) {
 					logger.log(Level.ERROR, Messages.getString("ProjectsHandler.4"), e);
 					result.put(Constants.REASON, e.getMessage());
@@ -521,7 +525,7 @@ public class ProjectsHandler implements HttpHandler {
 		obj.put(Constants.PROGRESS, Constants.PROCESSING);
 		processes.put(id, obj);
 		try {
-			Thread.ofVirtual().start(() -> {
+			new Thread(() -> {
 				try {
 					XliffStore store = projectStores.get(project);
 					store.updateXliff();
@@ -536,7 +540,7 @@ public class ProjectsHandler implements HttpHandler {
 					obj.put(Constants.REASON, e.getMessage());
 					processes.put(id, obj);
 				}
-			});
+			}).start();
 		} catch (Exception e) {
 			logger.log(Level.ERROR, Messages.getString("ProjectsHandler.4"), e);
 			result.put(Constants.REASON, e.getMessage());
@@ -948,7 +952,7 @@ public class ProjectsHandler implements HttpHandler {
 							}
 
 							boolean paragraph = paragraphSegmentation;
-							
+
 							File source = new File(fullName);
 							File xliff = new File(projectFolder, shortName + ".xlf");
 							if (!xliff.getParentFile().exists()) {
@@ -963,7 +967,7 @@ public class ProjectsHandler implements HttpHandler {
 							params.put("format", sf.getType());
 							params.put("catalog", catalogFile);
 							params.put("srcEncoding", sf.getEncoding());
-							params.put("paragraph", paragraph ? "yes" : "no");
+							params.put("paragraph", "yes");
 							params.put("srxFile", srxFile);
 							params.put("srcLang", json.getString("srcLang"));
 							params.put("tgtLang", json.getString("tgtLang"));
@@ -973,6 +977,10 @@ public class ProjectsHandler implements HttpHandler {
 
 							if ("0".equals(res.get(0))) {
 								res = ToXliff2.run(xliff, catalogFile, "2.1");
+								if (!paragraph) {
+									res = Resegmenter.run(xliff.getAbsolutePath(), srxFile, json.getString("srcLang"),
+											CatalogBuilder.getCatalog(catalogFile));
+								}
 							}
 							if ("0".equals(res.get(0))) {
 								setSourceFile(xliff, source.getName());
@@ -1031,7 +1039,9 @@ public class ProjectsHandler implements HttpHandler {
 				}
 			}).start();
 			result.put(Constants.STATUS, Constants.SUCCESS);
-		} catch (IOException | JSONException | SAXException | ParserConfigurationException e) {
+		} catch (IOException | JSONException | SAXException |
+
+				ParserConfigurationException e) {
 			logger.log(Level.ERROR, e);
 			result.put(Constants.STATUS, Constants.ERROR);
 			result.put(Constants.REASON, e.getMessage());
@@ -1247,7 +1257,7 @@ public class ProjectsHandler implements HttpHandler {
 			JSONObject obj = new JSONObject();
 			obj.put(Constants.PROGRESS, Constants.PROCESSING);
 			processes.put(id, obj);
-			Thread.ofVirtual().start(() -> {
+			new Thread(() -> {
 				try {
 					if (projectStores.containsKey(project)) {
 						projectStores.get(project).assembleMatchesAll(json);
@@ -1261,7 +1271,7 @@ public class ProjectsHandler implements HttpHandler {
 					obj.put(Constants.REASON, e.getMessage());
 					processes.put(id, obj);
 				}
-			});
+			}).start();
 		} catch (IOException | SAXException | ParserConfigurationException | URISyntaxException | SQLException e) {
 			logger.log(Level.ERROR, e);
 			result.put(Constants.REASON, e.getMessage());
@@ -1289,10 +1299,11 @@ public class ProjectsHandler implements HttpHandler {
 			obj.put("percentage", 0);
 			obj.put(Constants.PROGRESS, Constants.PROCESSING);
 			processes.put(id, obj);
-			Thread.ofVirtual().start(() -> {
+			new Thread(() -> {
 				try {
-					obj.put("translated",
-							projectStores.get(project).tmTranslateAll(memory, penalization, processes, id));
+					int[] counts = projectStores.get(project).tmTranslateAll(memory, penalization, processes, id);
+					obj.put("translated", counts[0]);
+					obj.put("matched", counts[1]);
 					obj.put(Constants.PROGRESS, Constants.COMPLETED);
 					processes.put(id, obj);
 				} catch (JSONException | IOException | SQLException | SAXException | ParserConfigurationException
@@ -1302,7 +1313,7 @@ public class ProjectsHandler implements HttpHandler {
 					obj.put(Constants.REASON, e.getMessage());
 					processes.put(id, obj);
 				}
-			});
+			}).start();
 		} catch (Exception e) {
 			logger.log(Level.ERROR, e.getMessage(), e);
 			result.put(Constants.REASON, e.getMessage());
@@ -1690,7 +1701,7 @@ public class ProjectsHandler implements HttpHandler {
 		JSONObject obj = new JSONObject();
 		obj.put(Constants.PROGRESS, Constants.PROCESSING);
 		processes.put(id, obj);
-		Thread.ofVirtual().start(() -> {
+		new Thread(() -> {
 			try {
 				JSONObject json = new JSONObject(request);
 				String project = json.getString("project");
@@ -1705,7 +1716,7 @@ public class ProjectsHandler implements HttpHandler {
 				obj.put(Constants.REASON, e.getMessage());
 				processes.put(id, obj);
 			}
-		});
+		}).start();
 		return result;
 	}
 
@@ -1936,6 +1947,24 @@ public class ProjectsHandler implements HttpHandler {
 			if (projectStores.containsKey(project)) {
 				result.put("notes", projectStores.get(project).getNotes(json.getString("file"), json.getString("unit"),
 						json.getString("segment")));
+			}
+		} catch (SQLException e) {
+			logger.log(Level.ERROR, e);
+			result.put(Constants.REASON, e.getMessage());
+		}
+		return result;
+	}
+
+	private JSONObject getContext(String request) {
+		JSONObject result = new JSONObject();
+		JSONObject json = new JSONObject(request);
+		try {
+			String project = json.getString("project");
+			if (projectStores.containsKey(project)) {
+				JSONObject context = projectStores.get(project).getContext(json.getString("file"), json.getString("unit"));
+				if (context != null) {
+					result.put("context", context);
+				}
 			}
 		} catch (SQLException e) {
 			logger.log(Level.ERROR, e);
